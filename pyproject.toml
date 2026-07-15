@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsready-linux-lab"
+version = "1.5.2"
+description = "An educational Linux operations and troubleshooting simulator."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Yasir Siddiq" }]
+dependencies = [
+  "streamlit>=1.59,<2.0",
+  "pandas>=2.0,<3.0",
+  "plotly>=5.20,<7.0",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Education",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
+[tool.setuptools.packages.find]
+include = ["opsready_lab*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
