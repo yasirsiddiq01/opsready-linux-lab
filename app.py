@@ -33,7 +33,7 @@ from opsready_lab.services.progress import (
 from opsready_lab.ui.animations import hero_demo, operational_flow
 from opsready_lab.ui.theme import apply_theme, hero, learning_card, panel, terminal
 
-st.set_page_config(page_title=APP_NAME, page_icon="🐧", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title=APP_NAME, page_icon="🐧", layout="wide", initial_sidebar_state="auto")
 apply_theme()
 initialise_progress(st.session_state)
 if "feedback_session_id" not in st.session_state:
