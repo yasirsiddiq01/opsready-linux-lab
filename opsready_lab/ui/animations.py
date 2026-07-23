@@ -5,6 +5,8 @@ from collections.abc import Sequence
 
 import streamlit as st
 
+from opsready_lab.services.execution_trace import ExecutionTrace
+
 _ICON_SVGS: dict[str, str] = {
     "computer": """
     <svg viewBox='0 0 64 64' aria-hidden='true'>
@@ -79,8 +81,8 @@ def hero_demo(*, paused: bool = False, replay_token: int = 0) -> None:
         <section class='overview-hero' aria-label='OpsReady Linux Lab product introduction'>
           <div class='overview-beta'>FREE PUBLIC BETA</div>
           <h1>OpsReady Linux Lab</h1>
-          <p class='overview-lead'>Learn Linux operations through interactive commands, server-health simulation, and incident diagnosis.</p>
-          <p class='overview-support'>Explore 150 commands, investigate 50 operational incidents, and test your knowledge with 45 assessment questions—all in a safe learning environment.</p>
+          <p class='overview-lead'>Learn Linux operations through a safe interactive terminal, server-health simulation, and incident diagnosis.</p>
+          <p class='overview-support'>Practise 25 reviewed commands interactively, explore 150 guided commands, investigate 50 incidents, and test your knowledge with 45 reviewed questions.</p>
           <div class='overview-stats' aria-label='Product content totals'>
             <span><b>150</b> commands</span><span><b>50</b> incidents</span><span><b>45</b> assessment questions</span>
           </div>
@@ -136,10 +138,10 @@ def hero_demo(*, paused: bool = False, replay_token: int = 0) -> None:
           <div class='hero-network'>
             <div class='hero-network-line'></div>
             <div class='hero-demo-packet one'></div><div class='hero-demo-packet two'></div>
-            <div class='hero-node' style='animation-delay:3.0s'>{_node('computer', 'Workstation', 'Enter command')}</div>
-            <div class='hero-node' style='animation-delay:3.7s'>{_node('switch', 'Switch', 'Forward signal')}</div>
-            <div class='hero-node' style='animation-delay:4.4s'>{_node('router', 'Router', 'Select path')}</div>
-            <div class='hero-node' style='animation-delay:5.1s'>{_node('server', 'Linux server', 'Collect evidence')}</div>
+            <div class='hero-node' style='animation-delay:3.0s'>{_node("computer", "Workstation", "Enter command")}</div>
+            <div class='hero-node' style='animation-delay:3.7s'>{_node("switch", "Switch", "Forward signal")}</div>
+            <div class='hero-node' style='animation-delay:4.4s'>{_node("router", "Router", "Select path")}</div>
+            <div class='hero-node' style='animation-delay:5.1s'>{_node("server", "Linux server", "Collect evidence")}</div>
           </div>
           <div class='hero-result-stage'>
             <div class='hero-health-card'>
@@ -215,6 +217,186 @@ def operational_flow(
           </div>
           <div class='ops-flow-note'>Conceptual learning animation. The exact path depends on whether a command is local, service-based, or network-facing.</div>
         </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+_TRACE_GLYPHS: dict[str, str] = {
+    "terminal": "&gt;_",
+    "shell": "$",
+    "process": "PID",
+    "kernel": "K",
+    "vfs": "/",
+    "folder": "DIR",
+    "file": "FILE",
+    "output": "OUT",
+    "procfs": "/proc",
+    "memory": "RAM",
+    "storage": "DISK",
+    "archive": "ZIP",
+    "socket": "SOCK",
+    "network": "NET",
+    "nic": "NIC",
+    "remote": "WEB",
+    "dns": "DNS",
+    "service": "SVC",
+    "journal": "LOG",
+    "filter": "FILTER",
+    "security": "ACL",
+    "container": "CTR",
+    "user": "UID",
+}
+
+
+def _execution_node(icon: str, title: str, detail: str, index: int) -> str:
+    glyph = _TRACE_GLYPHS.get(icon, icon[:5].upper())
+    return (
+        f"<div class='execution-node' style='--trace-index:{index}'>"
+        f"<span class='execution-step'>{index + 1}</span>"
+        f"<span class='execution-icon'>{glyph}</span>"
+        f"<strong>{html.escape(title)}</strong>"
+        f"<small>{html.escape(detail)}</small>"
+        "</div>"
+    )
+
+
+def execution_trace_diagram(trace: ExecutionTrace, *, run_token: int) -> None:
+    """Render a command-specific execution path with clearly visible motion.
+
+    The orange command token travels through the numbered Linux touchpoints.
+    Changing ``run_token`` restarts only this animation.
+    """
+
+    suffix = str(abs(hash((trace.command, trace.summary, run_token))) % 10_000_000)
+    node_count = max(1, len(trace.nodes))
+    nodes = "".join(
+        _execution_node(node.icon, node.title, node.detail, index) for index, node in enumerate(trace.nodes)
+    )
+    chips = "".join(f"<span>{html.escape(item)}</span>" for item in trace.touchpoints)
+    effect = trace.effect
+    effect_html = ""
+    if effect is not None:
+        effect_html = (
+            "<div class='execution-effect'>"
+            f"<article><b>Input</b><span>{html.escape(effect.input_value)}</span></article>"
+            f"<article><b>Action</b><span>{html.escape(effect.operation)}</span></article>"
+            f"<article><b>Result</b><span>{html.escape(effect.result)}</span></article>"
+            f"<article><b>System effect</b><span>{html.escape(effect.impact)}</span></article>"
+            "</div>"
+        )
+
+    layout_class = "trace-diamond" if node_count == 5 else "trace-zigzag"
+    if node_count == 5:
+        route_points = ((50, 16), (17, 50), (50, 50), (83, 50), (50, 84))
+        token_frames = (
+            (0, 50, 16),
+            (8, 50, 16),
+            (22, 17, 50),
+            (30, 17, 50),
+            (44, 50, 50),
+            (52, 50, 50),
+            (66, 83, 50),
+            (74, 83, 50),
+            (88, 50, 84),
+            (100, 50, 84),
+        )
+    else:
+        route_points = ((17, 25), (50, 25), (83, 25), (83, 75), (50, 75), (17, 75))
+        token_frames = (
+            (0, 17, 25),
+            (6, 17, 25),
+            (16, 50, 25),
+            (22, 50, 25),
+            (32, 83, 25),
+            (38, 83, 25),
+            (48, 83, 75),
+            (54, 83, 75),
+            (64, 50, 75),
+            (70, 50, 75),
+            (80, 17, 75),
+            (100, 17, 75),
+        )
+
+    route_lines = "".join(
+        (
+            f"<line x1='{x1}' y1='{y1}' x2='{x2}' y2='{y2}' "
+            f"class='execution-route-line' marker-end='url(#trace-arrow-{suffix})'></line>"
+        )
+        for (x1, y1), (x2, y2) in zip(route_points, route_points[1:])
+    )
+    polyline_points = " ".join(f"{x},{y}" for x, y in route_points)
+    token_keyframes = " ".join(f"{percent}% {{ left:{left}%; top:{top}%; }}" for percent, left, top in token_frames)
+    mobile_points = (
+        ((25, 17), (75, 17), (25, 50), (75, 50), (25, 83))
+        if node_count == 5
+        else ((25, 17), (75, 17), (25, 50), (75, 50), (25, 83), (75, 83))
+    )
+    mobile_frames: list[tuple[int, int, int]] = []
+    step = 80 / max(1, len(mobile_points) - 1)
+    for index, (left, top) in enumerate(mobile_points):
+        arrival = round(index * step)
+        hold_end = min(100, arrival + 7)
+        mobile_frames.extend(((arrival, left, top), (hold_end, left, top)))
+    mobile_frames.append((100, mobile_points[-1][0], mobile_points[-1][1]))
+    mobile_token_keyframes = " ".join(
+        f"{percent}% {{ left:{left}%; top:{top}%; }}" for percent, left, top in mobile_frames
+    )
+
+    if trace.kind == "Path string transformation":
+        path_badge = "String only · no filesystem access"
+    elif trace.kind == "Shell pipeline":
+        path_badge = "Local process pipeline"
+    else:
+        path_badge = "Network path" if trace.networked else "Local Linux path"
+
+    st.markdown(
+        f"""
+        <section class='execution-trace' id='execution-trace-{suffix}' aria-label='{html.escape(trace.summary)}'>
+          <style>
+            #execution-trace-{suffix} .execution-node {{
+              animation-name:traceNode{suffix};
+              animation-delay:calc(var(--trace-index) * 1.05s);
+            }}
+            #execution-trace-{suffix} .execution-moving-token {{ animation-name:traceToken{suffix}; }}
+            #execution-trace-{suffix} .execution-route-progress {{ animation-name:traceRoute{suffix}; }}
+            @keyframes traceNode{suffix} {{
+              0%,100% {{ transform:translateY(0) scale(1); border-color:#bfdbfe; background:#ffffff; }}
+              18%,62% {{ transform:translateY(-4px) scale(1.02); border-color:#f59e0b; background:#fffbeb; box-shadow:0 12px 28px rgba(245,158,11,.26); }}
+            }}
+            @keyframes traceToken{suffix} {{ {token_keyframes} }}
+            @media (max-width:900px) {{
+              @keyframes traceToken{suffix} {{ {mobile_token_keyframes} }}
+            }}
+            @keyframes traceRoute{suffix} {{
+              0% {{ stroke-dashoffset:120; opacity:.35; }}
+              15% {{ opacity:1; }}
+              100% {{ stroke-dashoffset:0; opacity:1; }}
+            }}
+          </style>
+          <header class='execution-trace-head'>
+            <div><strong>{html.escape(trace.kind)}</strong><p>{html.escape(trace.summary)}</p></div>
+            <span>{html.escape(path_badge)}</span>
+          </header>
+          {effect_html}
+          <div class='execution-underhood'>Under the hood</div>
+          <div class='execution-motion-key'><span></span>Watch the orange command token move through each numbered stage.</div>
+          <div class='execution-grid-wrap'>
+            <svg class='execution-route-layer' viewBox='0 0 100 100' preserveAspectRatio='none' aria-hidden='true'>
+              <defs>
+                <marker id='trace-arrow-{suffix}' markerWidth='7' markerHeight='7' refX='6' refY='3.5' orient='auto' markerUnits='strokeWidth'>
+                  <path d='M0,0 L7,3.5 L0,7 z' class='execution-route-arrow'></path>
+                </marker>
+              </defs>
+              {route_lines}
+              <polyline points='{polyline_points}' class='execution-route-progress'></polyline>
+            </svg>
+            <div class='execution-moving-token' aria-hidden='true'><span>▶</span></div>
+            <div class='execution-grid {layout_class}'>{nodes}</div>
+          </div>
+          <div class='execution-sequence-note'>The token pauses briefly at each stage. Use Replay simulation to watch the same path again without rerunning the command.</div>
+          <div class='execution-touchpoints'>{chips}</div>
+        </section>
         """,
         unsafe_allow_html=True,
     )

@@ -43,4 +43,4 @@ Three reviewed questions per level remain available as an internal emergency fal
 
 ## Current bank size
 
-Version 1.5.2 contains 45 reviewed questions: 15 per level. Expanding the bank to 600 requires a separate editorial and technical-review workflow; it is not achieved by adding unreviewed generated questions.
+Version 1.6.1 contains 45 reviewed questions: 15 per level. Expanding the bank to 600 requires a separate editorial and technical-review workflow; it is not achieved by adding unreviewed generated questions.

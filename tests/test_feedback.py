@@ -11,7 +11,7 @@ from opsready_lab.services.feedback import (
 
 def valid_record():
     return create_feedback_record(
-        app_version="1.5.2",
+        app_version="1.7.1",
         session_id="test-session",
         role="Learner",
         linux_experience="Beginner",

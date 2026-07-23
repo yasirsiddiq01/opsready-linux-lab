@@ -49,9 +49,7 @@ def test_successful_feedback_submission_clears_form(monkeypatch, tmp_path) -> No
     next(item for item in app.multiselect if item.label == "What kind of feedback are you giving?").set_value(
         ["Usability"]
     )
-    next(item for item in app.multiselect if item.label == "Which sections did you use?").set_value(
-        ["Command Lab"]
-    )
+    next(item for item in app.multiselect if item.label == "Which sections did you use?").set_value(["Command Lab"])
     next(item for item in app.text_area if item.label == "What should be improved first? *").set_value(
         "Clear the form after a successful submission."
     )
@@ -106,7 +104,7 @@ def test_overview_cta_opens_command_lab() -> None:
     next(item for item in app.button if item.label == "Start Learning").click()
     app.run()
     assert not app.exception
-    assert any(item.label == "Command" for item in app.selectbox)
+    assert any(item.label == "Learning mode" for item in app.segmented_control)
 
 
 def open_assessment(app: AppTest) -> AppTest:
@@ -136,7 +134,6 @@ def test_assessment_generates_only_after_explicit_button(monkeypatch, tmp_path) 
     assert len([item for item in app.markdown if "Question " in item.value and " of " in item.value]) == 10
 
 
-
 def test_assessment_uses_only_reviewed_random_bank(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("OPSREADY_ASSESSMENT_CACHE_DIR", str(tmp_path / "tests"))
     app = AppTest.from_file(str(app_path()), default_timeout=30).run()
@@ -149,3 +146,121 @@ def test_assessment_uses_only_reviewed_random_bank(monkeypatch, tmp_path) -> Non
     next(item for item in app.button if item.label == "Generate test").click()
     app.run()
     assert next(metric.value for metric in app.metric if metric.label == "Source") == "Reviewed random bank"
+
+
+def test_interactive_terminal_runs_a_stateful_virtual_command() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    app = open_workspace_section(app, "Command Lab")
+
+    assert not app.exception
+    assert any("### Practice terminal" in item.value for item in app.markdown)
+    command_input = next(item for item in app.text_input if item.label == "Linux command")
+    command_input.set_value("pwd")
+    next(item for item in app.button if item.label == "Run").click()
+    app.run()
+
+    assert not app.exception
+    assert any("/home/student" in item.value for item in app.markdown)
+    assert any("Runs: 9/10" in item.value for item in app.markdown)
+    assert any("What happened" in item.value for item in app.markdown)
+    replay = next(item for item in app.button if item.label == "Replay simulation")
+    replay.click()
+    app.run()
+    assert not app.exception
+    assert any("Runs: 9/10" in item.value for item in app.markdown)
+
+
+def test_interactive_terminal_blocks_shell_chaining_without_using_a_run() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    app = open_workspace_section(app, "Command Lab")
+    command_input = next(item for item in app.text_input if item.label == "Linux command")
+    command_input.set_value("pwd && whoami")
+    next(item for item in app.button if item.label == "Run").click()
+    app.run()
+
+    assert not app.exception
+    assert any("Blocked for safety" in item.value for item in app.warning)
+    assert any("Runs: 10/10" in item.value for item in app.markdown)
+
+
+def test_practice_terminal_shows_command_specific_kernel_path() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    app = open_workspace_section(app, "Command Lab")
+    next(item for item in app.text_input if item.label == "Linux command").set_value("pwd")
+    next(item for item in app.button if item.label == "Run").click()
+    app.run()
+
+    trace_markup = "\n".join(item.value for item in app.markdown if "execution-trace" in item.value)
+    assert "Kernel syscall" in trace_markup
+    assert "getcwd()" in trace_markup
+    assert "Switch" not in trace_markup
+    assert "Router" not in trace_markup
+
+
+def test_guided_explorer_uses_reviewed_example_and_specific_path() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    app = open_workspace_section(app, "Command Lab")
+    mode = next(item for item in app.segmented_control if item.label == "Learning mode")
+    mode.set_value("Guided command explorer")
+    app.run()
+
+    command = next(item for item in app.selectbox if item.label == "Command")
+    command.set_value("cat")
+    app.run()
+    next(item for item in app.button if item.label == "Run guide").click()
+    app.run()
+
+    trace_markup = "\n".join(item.value for item in app.markdown if "execution-trace" in item.value)
+    assert "Kernel VFS" in trace_markup
+    assert "/etc/os-release" in trace_markup
+    assert "Target file" in trace_markup
+    assert any(button.label == "Replay simulation" for button in app.button)
+    next(button for button in app.button if button.label == "Replay simulation").click()
+    app.run()
+    assert not app.exception
+    assert any("/etc/os-release" in item.value for item in app.markdown)
+
+
+def test_practice_examples_insert_automatically_without_load_button() -> None:
+    source = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8")
+    assert "on_change=insert_practice_example" in source
+    assert '"Load example"' not in source
+    assert '"Reset terminal"' in source
+
+
+def test_guided_basename_explains_string_transformation_without_filesystem_access() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    app = open_workspace_section(app, "Command Lab")
+
+    mode = next(item for item in app.segmented_control if item.label == "Learning mode")
+    mode.set_value("Guided command explorer")
+    app.run()
+    command = next(item for item in app.selectbox if item.label == "Command")
+    command.set_value("basename")
+    app.run()
+    next(item for item in app.button if item.label == "Run guide").click()
+    app.run()
+
+    assert not app.exception
+    rendered = "\n".join(item.value for item in app.markdown)
+    assert "Path string transformation" in rendered
+    assert "String only · no filesystem access" in rendered
+    assert "No file or directory is opened" in rendered
+    assert "Print: error.log" in rendered
+
+
+def test_plans_page_is_prelaunch_and_does_not_expose_checkout_by_default() -> None:
+    app = AppTest.from_file(str(app_path()), default_timeout=30).run()
+    navigation = next(item for item in app.radio if item.label == "Navigation")
+    navigation.set_value("Plans")
+    app.run()
+
+    assert not app.exception
+    rendered = "\n".join(item.value for item in app.markdown)
+    assert "Community" in rendered
+    assert "Planned paid learning edition" in rendered
+    assert "Pro delivery roadmap" in rendered
+    assert "1. Foundation" in rendered
+    assert "2. Founding beta" in rendered
+    assert not any(button.label == "Upgrade to Pro" for button in app.button)
+    assert any(button.label == "Pro launch list coming soon" for button in app.button)

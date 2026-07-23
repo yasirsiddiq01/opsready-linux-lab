@@ -1,18 +1,16 @@
 # Roadmap
 
-## 1.5 — Free public validation
+## 1.6 — Interactive public beta
 
-- publish the free learning simulator
-- collect structured in-app feedback through a persistent webhook
-- analyse usefulness, ease, confidence, recommendation, bugs, and missing-topic requests
-- review feedback on the 150 commands, 50 incidents, and reviewed random assessments
-- improve keyboard navigation and small-screen behaviour
-- add downloadable session results
-- run learner interviews and usability tests
+- release the safe Interactive Linux Practice Terminal
+- collect evidence about which commands learners attempt and where they become confused
+- review terminal syntax errors and missing read-only commands
+- monitor mobile usability and feedback delivery
+- add downloadable session summaries after validation
 
-## 1.6 — Assessment-content expansion
+## 1.7 — Assessment-content expansion
 
-- expand the reviewed assessment bank from 45 to 600 questions
+- expand the reviewed assessment bank beyond 45 questions
 - balance questions across levels and Linux operational domains
 - add editorial review status and source metadata
 - add near-duplicate detection during content validation
@@ -24,6 +22,7 @@
 - store progress in PostgreSQL
 - add learner profiles and resumable paths
 - add privacy controls and account deletion
+- enforce account-based terminal quotas only if product evidence justifies them
 
 ## 3.0 — Instructor edition
 
@@ -35,4 +34,17 @@
 
 ## Deferred research
 
-A real terminal sandbox is not a minor feature. It requires container isolation, resource quotas, network restrictions, abuse controls, image patching, observability, and automatic cleanup.
+A real terminal sandbox remains outside the public simulator. It requires container isolation, resource quotas, network restrictions, abuse controls, image patching, observability, and automatic cleanup.
+
+
+## Commercial foundation
+
+- [x] Community/Pro feature matrix
+- [x] fail-closed checkout configuration
+- [x] product listing and store-activation preparation
+- [x] policy templates and seller checklist
+- [ ] private Pro repository and deployment
+- [ ] user authentication and persistent progress
+- [ ] Lemon Squeezy test-mode product
+- [ ] verified webhook or licence fulfilment
+- [ ] founding paid cohort

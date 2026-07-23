@@ -1,33 +1,10 @@
-# Version 1.5.2 Patch Instructions
+# Patch instructions — 1.7.1
 
-This patch updates version 1.5.1.
+Apply this patch over OpsReady Linux Lab 1.7.0.
 
-1. Stop the running application with `Ctrl + C`.
+1. Stop Streamlit.
 2. Back up `.streamlit/secrets.toml`.
-3. Extract the patch.
-4. Copy the patch's `opsready-linux-lab` contents into the existing project.
-5. Allow matching files to be replaced.
-6. From the project root, remove obsolete files with one of these commands:
-
-Windows PowerShell:
-
-```powershell
-.\scripts\cleanup_v152.ps1
-```
-
-Linux or macOS:
-
-```bash
-bash scripts/cleanup_v152.sh
-```
-
-7. Confirm `.streamlit/secrets.toml` still exists.
-8. Run:
-
-```powershell
-python -m pip install -r requirements-dev.txt
-python -m pytest -q
-python -m streamlit run app.py
-```
-
-The patch does not include your real secrets file.
+3. Copy the patch's `opsready-linux-lab` contents into the existing project and replace matching files.
+4. Run `python -m pytest -q`.
+5. Run `python -m ruff check .`.
+6. Start the application and manually verify the sidebar reset button and Plans roadmap.

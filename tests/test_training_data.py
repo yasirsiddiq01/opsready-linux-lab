@@ -57,3 +57,14 @@ def test_command_levels_are_balanced() -> None:
 def test_incident_catalogue_has_substantial_level_coverage() -> None:
     for level in LEVELS:
         assert sum(1 for item in INCIDENTS if item["level"] == level) >= 16
+
+
+def test_path_string_command_descriptions_do_not_imply_deletion() -> None:
+    from opsready_lab.catalog.commands import COMMANDS, learning_guide
+
+    basename = COMMANDS["basename"]
+    dirname = COMMANDS["dirname"]
+    assert "does not delete" in str(basename["summary"])
+    assert "does not remove" in str(dirname["summary"])
+    assert "does not open" in learning_guide("basename")["read"]
+    assert "No directory is removed" in learning_guide("dirname")["read"]

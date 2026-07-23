@@ -1,31 +1,43 @@
 {
   "product": "OpsReady Linux Lab",
-  "version": "1.5.2",
-  "release_date": "2026-07-14",
+  "version": "1.7.1",
+  "release_date": "2026-07-23",
+  "edition": "Community pre-commerce maintenance release",
   "content_counts": {
-    "commands": 150,
+    "guided_commands": 150,
+    "interactive_terminal_commands": 25,
+    "interactive_attempts_per_reset": 10,
     "incidents": 50,
-    "reviewed_assessment_questions": 45,
-    "emergency_backup_questions_per_level": 3
+    "reviewed_assessment_questions": 45
   },
   "validation": {
-    "tests_passed": 34,
-    "ruff": "passed",
-    "compileall": "passed",
-    "streamlit_health": "ok"
+    "non_ui_test_cases_passed": 57,
+    "python_ast_parse": "passed",
+    "commercial_readiness_default": "failed_closed_as_expected",
+    "streamlit_ui_tests_present": 15,
+    "streamlit_ui_tests_executed_in_build_container": false,
+    "ruff_executed_in_build_container": false,
+    "ruff_reported_source_findings_corrected": true
   },
-  "features": {
-    "animated_overview_hero": true,
-    "animated_operational_flows": true,
-    "high_contrast_dropdowns": true,
-    "reviewed_random_assessments_only": true,
-    "external_model_generation": false,
-    "duplicate_question_validation": true,
-    "sampling_without_replacement": true,
-    "three_question_internal_emergency_fallbacks": true,
-    "assessment_query_state_and_cache": true,
-    "deterministic_feedback_test_mode": true,
-    "reduced_motion_fallback": true
+  "maintenance_changes": {
+    "commercial_import_cleanup": true,
+    "sidebar_reset_button_contrast": true,
+    "pro_delivery_roadmap": true
+  },
+  "commercial_features": {
+    "plans_page": true,
+    "pro_roadmap": true,
+    "checkout_enabled_by_default": false,
+    "waitlist_configurable": true,
+    "customer_portal_configurable": true,
+    "https_checkout_validation": true,
+    "support_email_validation": true,
+    "terms_privacy_refund_gate": true,
+    "fulfilment_gate": true,
+    "lemon_squeezy_api_integration": false,
+    "webhook_receiver": false,
+    "authentication": false,
+    "persistent_subscription_state": false
   },
   "files": [
     {
@@ -40,13 +52,13 @@
     },
     {
       "path": ".streamlit/config.toml",
-      "size_bytes": 245,
-      "sha256": "d5c7383cc44114c3e263629337483c81f196a5b5e2d1d305482bd63429505d6d"
+      "size_bytes": 304,
+      "sha256": "81e1435cfc427a476e33c1826d6048fc6db2807abba0870bfb1eb1510ee21aa4"
     },
     {
       "path": ".streamlit/secrets.toml.example",
-      "size_bytes": 205,
-      "sha256": "a6310a97e9698e997681aa511ef132152c79c9cade6fb0490eca9f97207aa6ef"
+      "size_bytes": 571,
+      "sha256": "f7750dd01beb6f81a89a4492375202981bc219740772394768f71e6a39a18a99"
     },
     {
       "path": "BRAND.md",
@@ -55,13 +67,13 @@
     },
     {
       "path": "BUILD_VALIDATION.md",
-      "size_bytes": 952,
-      "sha256": "43e093909574f854a95bd491ffaddbbc4ccac645cc83523f554c3b701d058fc0"
+      "size_bytes": 1269,
+      "sha256": "2686a31f40bef4ed65fd60eaa48c62257c512e91804d8e30d1cc4dd3c29a3eac"
     },
     {
       "path": "CHANGELOG.md",
-      "size_bytes": 6298,
-      "sha256": "95e18735930efd5b818d9a8af3b9e846738845b30d4d9cbcc88ca3c77c6fc457"
+      "size_bytes": 11549,
+      "sha256": "9f812086cf76154ae15fd95f84766ec5f1db3d8776867be8903213ccf6820ea9"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -85,8 +97,8 @@
     },
     {
       "path": "Makefile",
-      "size_bytes": 365,
-      "sha256": "ed5ae2e296d13a80dac425a93310f450c412c35bb5651d7cfe50874e04aa2c46"
+      "size_bytes": 447,
+      "sha256": "779b916c92bbf8741edf3cf3e082fbf167d3146b18f689214ea6fd06882dc890"
     },
     {
       "path": "NOTICE.md",
@@ -95,38 +107,78 @@
     },
     {
       "path": "PATCH_INSTRUCTIONS.md",
-      "size_bytes": 727,
-      "sha256": "c4897a50ba8487e6dae9aa75e6888b7cb9273181cd9e44cdd60087d9afa1f7f4"
+      "size_bytes": 394,
+      "sha256": "16f660603badd8224d41eba37d0e9b1ec3088e0fd644254dc91c7d66b39ca104"
     },
     {
       "path": "README.md",
-      "size_bytes": 5076,
-      "sha256": "9ff497bb7ea5375bd52fb2157a715dd62242d0748ca23ba78dc5e4ba55d8fdb2"
+      "size_bytes": 8553,
+      "sha256": "d8c26ec5de87c62ed8250a8430dd3ef6ff38df1c07587df6de22e768905caa5f"
     },
     {
       "path": "ROADMAP.md",
-      "size_bytes": 1378,
-      "sha256": "dcf61433f2f42b03cba7dba2c96a4604ac967349b3143bd8f7cb0964adcc38ec"
+      "size_bytes": 1769,
+      "sha256": "69c092661366d1b4d5d46be7d73e26f94271d42faf9511d881df9a478d680a31"
     },
     {
       "path": "SECURITY.md",
-      "size_bytes": 1332,
-      "sha256": "97e54a25592e98abeacae2855d63eaaa6797792885f781323d9100e8be9ea9d7"
+      "size_bytes": 2532,
+      "sha256": "f412c2134b83fc8d861590c6f7d08a918ef721734e171e4c901edacc271ccea3"
     },
     {
       "path": "START_HERE.md",
-      "size_bytes": 1894,
-      "sha256": "71d9f9f0ff840b457feddf2a1d9284913e8115e86663d8a79a666489db04e5be"
+      "size_bytes": 2766,
+      "sha256": "e74230c02f9e822091b5f9e39d471157d290dc75541718353808b86dbc1b8477"
     },
     {
       "path": "UPGRADE_NOTES.md",
-      "size_bytes": 1323,
-      "sha256": "d1fde174263cb25b48c8664264b02d069042cf6dfecc839761d2d4c0a56a3244"
+      "size_bytes": 1003,
+      "sha256": "dc00654d67222031d5a1e9059cad4af6879b3b59432c3223f26b96d9a3b318a9"
     },
     {
       "path": "app.py",
-      "size_bytes": 48200,
-      "sha256": "183eb8bf1988d0881607fa02fcb9abf4ed394b9e74d83fe545e5ca23cb20a034"
+      "size_bytes": 65219,
+      "sha256": "f5b0c025a6028b74ccce6ea7c51bfbede56fef498b5f041ffab92f5c0151e02b"
+    },
+    {
+      "path": "commercial/COMMUNITY_PRO_MATRIX.md",
+      "size_bytes": 1214,
+      "sha256": "52b70f85cb88675cbdeccff8d4c5962f14a28fa8e4ca1976af1ef1217839d36d"
+    },
+    {
+      "path": "commercial/LEMON_SQUEEZY_SETUP.md",
+      "size_bytes": 4376,
+      "sha256": "7a0de899d65b732fea039293b3364ca17a3f68f10b4fdf9eb35fae93298abc52"
+    },
+    {
+      "path": "commercial/PRE_LAUNCH_DECISIONS.md",
+      "size_bytes": 914,
+      "sha256": "0a35eaafedb008f453e24c48523d0d27f05d37284b541d3f5008efcb4174f4fd"
+    },
+    {
+      "path": "commercial/PRICING_DECISION.md",
+      "size_bytes": 1044,
+      "sha256": "0782d3dd58ef30ef4ec87d0a1c4445fc2e916990e7b148a8dbfd397a754436ab"
+    },
+    {
+      "path": "commercial/PRODUCT_LISTING_COPY.md",
+      "size_bytes": 2973,
+      "sha256": "2bc0c46f445f9c69f535405e53c20022cb2191a3ac5b3513c437945a65239be3"
+    },
+    {
+      "path": "commercial/PRO_ROADMAP.md",
+      "size_bytes": 1432,
+      "sha256": "87ca4875ae05bc6ffce014b6eb06656c24fa3bb5ae9fcbe404c0c15f519638a6"
+    },
+    {
+      "path": "commercial/SELLER_READINESS_CHECKLIST.md",
+      "size_bytes": 2172,
+      "sha256": "5087773fc64a54446c5f98c130ffc181ae3412b49fc500d8098b0a70e89bcf4c"
+    },
+    {
+      "path": "commercial/STORE_ACTIVATION_ANSWERS.md",
+      "size_bytes": 2763,
+      "sha256": "4fd6c748f524fa64c5b8f8792ab7cf71d07d4053609f8294e458811c25832208"
     },
     {
       "path": "docker-compose.yml",
@@ -135,18 +187,18 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "size_bytes": 2459,
-      "sha256": "126ee13b15083972131a384e91f3ff8e47a46f08baaa53ac5a578b5680401e1d"
+      "size_bytes": 2922,
+      "sha256": "6545dd7e1fa8f4fa6f309f1174895c136ab17b474f373ab9f33e4268e63a6f84"
     },
     {
       "path": "docs/ASSESSMENT_ENGINE.md",
       "size_bytes": 1954,
-      "sha256": "79ebf25d1d0a9a35762a090365c4b7e03024f570700ab6e5b52a8e7819d78a51"
+      "sha256": "2ece4a4bb4e370bc6df20aa12f17520dbfcc98cbc171ce2569ee3d85d34cd078"
     },
     {
       "path": "docs/CONTENT_MODEL.md",
-      "size_bytes": 1305,
-      "sha256": "cd7234440a8955865b0d56eaeee63f43787fd64816c9fabbf7415037f36c44dd"
+      "size_bytes": 1701,
+      "sha256": "ec8323db2b749d4b82fe3152d15706ef877ac4646312cc47116862eb11f27f91"
     },
     {
       "path": "docs/DEPLOYMENT.md",
@@ -159,19 +211,44 @@
       "sha256": "3770e9e4a4a93c5b83199b83ca675548dfd9f51a8732b31770dda8b1fadc8ac0"
     },
     {
+      "path": "docs/PRACTICE_TERMINAL.md",
+      "size_bytes": 4595,
+      "sha256": "c59972529e4968acc5f5a1177ac4fb298afe35c0b2a0acd4d7baa47ff54fdcaa"
+    },
+    {
       "path": "docs/PRODUCT_SCOPE.md",
-      "size_bytes": 1130,
-      "sha256": "278c590bd1f02017ae6da2ff3ec8150cb8100a8a4784eeec9a0f9751da0492bb"
+      "size_bytes": 1110,
+      "sha256": "b24e66228d64c3d3b52c492a21bcedf686262e77133cb3805b5e8e227f3cc552"
     },
     {
       "path": "docs/TESTING.md",
-      "size_bytes": 1496,
-      "sha256": "fefe1b7343ff0c1f07cc85bd29704660a641b71d87ea7f483323e4b821174a55"
+      "size_bytes": 2302,
+      "sha256": "dd9c784fd763214ea1233fdd0beeec93675c7db43022d9078ff18328dc90689a"
+    },
+    {
+      "path": "docs/legal/COMMERCIAL_DISCLOSURE_DRAFT.md",
+      "size_bytes": 894,
+      "sha256": "07dbe3a9a6a0dee3a9cd5e68a60a3825cae4b09f554a919f3882b37cf8c66e38"
+    },
+    {
+      "path": "docs/legal/PRIVACY_POLICY_DRAFT.md",
+      "size_bytes": 3081,
+      "sha256": "3904bc4a4303049156a42a3cc5286e7a5b87595c3d0ce208a092ee27a036b26f"
+    },
+    {
+      "path": "docs/legal/REFUND_AND_CANCELLATION_POLICY_DRAFT.md",
+      "size_bytes": 2032,
+      "sha256": "64fd1108df6cb818ade1e635fdfef1fc952dda6831918253a4b6b900505ebade"
+    },
+    {
+      "path": "docs/legal/TERMS_OF_USE_DRAFT.md",
+      "size_bytes": 3504,
+      "sha256": "971a430e471e56195f277f29a9d1e042423f360571342e7c6f3d473f04d46db7"
     },
     {
       "path": "opsready_lab/__init__.py",
       "size_bytes": 69,
-      "sha256": "10af02d4de0bc0dd1c1495c8d6c07390ba4b6c250138f1b04370fc8e4c27f8fb"
+      "sha256": "40142703ee3b6fb716458594a82497df0fd997b2569e5a787856230e9b4a8eec"
     },
     {
       "path": "opsready_lab/catalog/__init__.py",
@@ -180,23 +257,23 @@
     },
     {
       "path": "opsready_lab/catalog/commands.py",
-      "size_bytes": 151679,
-      "sha256": "bb6b84fd2dc6072338bab66446ffaaa2f2ad22ff61d1ff1363c9bf6bcc022986"
+      "size_bytes": 172209,
+      "sha256": "29365098ec686174b9f1745e5dd6bac5a44c41be105be0d94dd0e7e17024f5b9"
     },
     {
       "path": "opsready_lab/catalog/exercises.py",
-      "size_bytes": 16846,
-      "sha256": "750e7081c42a7f327a7bd326fb286c6cdc5601a2869d7b7ddb17bf30677c3b78"
+      "size_bytes": 21679,
+      "sha256": "8a989b59769385b835949c29c9405474ff5e3af4f013941252995157565f4caf"
     },
     {
       "path": "opsready_lab/catalog/incidents.py",
-      "size_bytes": 51028,
-      "sha256": "48ab6aa85bc37660900217817c7139c91e56d589cdaa92e48247dff630cb253e"
+      "size_bytes": 67405,
+      "sha256": "e4617c6845d9eaa2dcfc9edbe0bf215187a194abaa24b58f7e9c51925bdfede8"
     },
     {
       "path": "opsready_lab/config.py",
       "size_bytes": 209,
-      "sha256": "7773267f359612ea32e8824fd3a32846d00540aec50c692493bceb551b450b7c"
+      "sha256": "827f1eeeb129286ad4572975341bde2af74a24e4e976d13e550eb54864edf917"
     },
     {
       "path": "opsready_lab/services/__init__.py",
@@ -209,9 +286,29 @@
       "sha256": "a4bf0012caaeef39cdbf9d6421a87904238b40e11028d735448cebb78daf1add"
     },
     {
+      "path": "opsready_lab/services/commercial.py",
+      "size_bytes": 3894,
+      "sha256": "8667804630c1023eb98ec96dd8b44bfed358b0641c0f78b2cbe615e486e7ef92"
+    },
+    {
+      "path": "opsready_lab/services/execution_trace.py",
+      "size_bytes": 39453,
+      "sha256": "09d10e971b799c6aeaf899b34fe2c9fb50bd520024020e4696900f9b61c1c4e6"
+    },
+    {
       "path": "opsready_lab/services/feedback.py",
       "size_bytes": 9514,
       "sha256": "33859893e9efe029d5b3fe112b6d957eb6e0dff80ac372706d368f7102ca9fcf"
+    },
+    {
+      "path": "opsready_lab/services/guided_output.py",
+      "size_bytes": 12829,
+      "sha256": "a1dbec0e281cf9c9eeead451373960e40a1a045e485e922f26a3626da3571791"
+    },
+    {
+      "path": "opsready_lab/services/practice_terminal.py",
+      "size_bytes": 44437,
+      "sha256": "794f8d0fddf2ac128d6e5051e35a6150cd21af17d469215933c073a6e24a6c94"
     },
     {
       "path": "opsready_lab/services/progress.py",
@@ -225,18 +322,18 @@
     },
     {
       "path": "opsready_lab/ui/animations.py",
-      "size_bytes": 12749,
-      "sha256": "010f8d1c1cff33a8e3a50a97ccf7b83ba54baa74f6d2fe44d929e62fe89f74da"
+      "size_bytes": 20176,
+      "sha256": "e1094d7af08a4b38e18392dfeec26abffdbfb49440f4728a57ab6c5a95b23a72"
     },
     {
       "path": "opsready_lab/ui/theme.py",
-      "size_bytes": 20258,
-      "sha256": "e600c00ae2910c2e285ba9ce9aa284c1716637d06e9f29b590bcc33632ab8879"
+      "size_bytes": 32271,
+      "sha256": "7c86d9da2a7c6a0b6e5ba68021a4f2df822a27efbdcbf16365698a68bee57df0"
     },
     {
       "path": "pyproject.toml",
       "size_bytes": 927,
-      "sha256": "f473e5d529a6872f179d5a359ce9d01ad4e15bbf40748e77e717907f589111f6"
+      "sha256": "c541848b9d3d512f834850397dee2a0d6aaafab5de8f18fe3213a6abf70e9c43"
     },
     {
       "path": "requirements-dev.txt",
@@ -257,6 +354,11 @@
       "path": "scripts/check.sh",
       "size_bytes": 125,
       "sha256": "6273ed5feb89884ee0439a0a14e39846b9d518d5916d81a0258c7d6fffea957a"
+    },
+    {
+      "path": "scripts/check_commercial_readiness.py",
+      "size_bytes": 1346,
+      "sha256": "85e57a0d257b8b4ba6f57e0ded47c17981fa8fafda11e9106d66a63149cd7f67"
     },
     {
       "path": "scripts/cleanup_v152.ps1",
@@ -295,8 +397,8 @@
     },
     {
       "path": "tests/test_app_ui.py",
-      "size_bytes": 7449,
-      "sha256": "c71e686c7aa3530ff1bec225e27be2852380eebd262e4b6ac4a7a2437bf094fa"
+      "size_bytes": 12687,
+      "sha256": "f4e84507955bbe9e8f7efd9b82f81ec91c4e05b993551efaed0987d84a5784b8"
     },
     {
       "path": "tests/test_assessment_engine.py",
@@ -304,14 +406,34 @@
       "sha256": "1fb37a3cd0f6e238b559179240c3fae2cc941a13b53b2caa63ccb593d8d8de7c"
     },
     {
+      "path": "tests/test_commercial.py",
+      "size_bytes": 1502,
+      "sha256": "23b96fb1d7e5156b0e7fbb40f1dc540547c01557afb75319bcbbcd272df08399"
+    },
+    {
+      "path": "tests/test_execution_trace.py",
+      "size_bytes": 4829,
+      "sha256": "5ed56657664eb30636bd1f1ba1b0ddce70579028f9eabf7f0de54df711b94d21"
+    },
+    {
       "path": "tests/test_feedback.py",
       "size_bytes": 1808,
-      "sha256": "d9869c497c12833c27ff901b381e522261a5472d6e38b5c20128d5ff1ac14275"
+      "sha256": "cfb7ba174ef4768cf10bd71d8abaf3a447b5e7e2302897fe09c929db137ccad3"
+    },
+    {
+      "path": "tests/test_guided_output.py",
+      "size_bytes": 1634,
+      "sha256": "b275513668eaa3054c83c9e42fc1dcb1067ee36631c8f2b8539dc85cbee12097"
     },
     {
       "path": "tests/test_package.py",
-      "size_bytes": 639,
-      "sha256": "655a3a356d588272e0b20e764cada85a2f7535554f20397d45bca178fbe82103"
+      "size_bytes": 1240,
+      "sha256": "80d6ee90e3085e1b7f1e319349760366017ef69f909238915c5454068d19816d"
+    },
+    {
+      "path": "tests/test_practice_terminal.py",
+      "size_bytes": 4197,
+      "sha256": "d6a2c3a00e9a979ceb75fae49fbb59e1a13858632efdb2099658aac03e0a657b"
     },
     {
       "path": "tests/test_progress.py",
@@ -320,8 +442,8 @@
     },
     {
       "path": "tests/test_training_data.py",
-      "size_bytes": 2053,
-      "sha256": "f2da5e16a0c5b5137663f47b042434d0516652781fc6754cd72925ebd6118950"
+      "size_bytes": 2524,
+      "sha256": "6aee9661182caaeaf1db0268e737e7ca7ef415360f8dc772329e9b454a47bfe3"
     }
   ]
 }

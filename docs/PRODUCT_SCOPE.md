@@ -1,31 +1,39 @@
 # Product Scope
 
-## Version 1.5.2 purpose
+## Version 1.7.1 purpose
 
-OpsReady Linux Lab is a free public-preview simulator for learning Linux operational reasoning and collecting evidence about learner needs.
+OpsReady Linux Lab 1.7.1 remains the free Community learning edition and adds commercial-launch preparation. It does not turn the public application into a paid product.
 
-## Included
+## Community scope
 
-- simulated command output and explanations
-- server-health interpretation
-- structured learning paths
-- incident diagnosis
-- explicit random level assessments from a reviewed 45-question bank
-- duplicate-bank validation and sampling without replacement
-- stable seeded tests that change only after explicit generation
-- session-only progress and scoring
-- structured product feedback with optional persistent webhook delivery
+- 150 guided commands
+- 25-command safe virtual terminal
+- 50 incident scenarios
+- 45 reviewed assessment questions
+- session-based progress
+- public feedback collection
+- Community/Pro comparison page
 
-## Excluded
+## Commercial preparation scope
 
-- real command execution
-- server agents or monitoring integrations
-- external language-model assessment generation
-- model-provider APIs or learner-facing AI options
-- persistent learner accounts
-- certification claims
-- payment or subscription systems
-- instructor dashboards
-- advanced feedback moderation, CAPTCHA, or analytics
+- fail-closed checkout configuration
+- waitlist and policy-link configuration
+- Lemon Squeezy product and activation copy
+- Community versus Pro feature boundary
+- draft legal-policy templates
+- Spain-based seller readiness checklist
+- command-line readiness validation
 
-Feedback collected from the free version should determine which excluded capabilities, commands, incidents, and assessment domains deserve further investment.
+## Explicitly not included
+
+- live payments
+- user authentication
+- persistent learner database
+- webhook receiver
+- subscription entitlement storage
+- licence-key validation
+- private Pro deployment
+- accredited certificates
+- institution administration
+
+These capabilities must be implemented and tested before `sales_enabled` and `fulfilment_ready` are set to true.

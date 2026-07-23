@@ -27,6 +27,10 @@ Explicit assessment-test generation, deterministic seeded random selection, dupl
 
 Session-only completion and scoring logic. It prevents duplicate score awards in the same browser session.
 
+### `opsready_lab/services/practice_terminal.py`
+
+Safe command parsing, the in-memory virtual filesystem, stateful directory navigation, reviewed command handlers, Linux-style synthetic output, run-limit enforcement, command history, health-scenario linkage, and blocked-input explanations. The service never invokes the operating-system shell.
+
 ### `opsready_lab/services/feedback.py`
 
 Feedback record construction, input normalisation, validation, JSONL fallback persistence, webhook URL validation, JSON delivery, and delivery-status reporting.
@@ -41,11 +45,11 @@ Application name, version, tagline, and slug.
 
 ## State model
 
-Learning progress is held in Streamlit session state and is intentionally non-persistent in the free validation version. The active assessment test is stored in session state, cached under `.runtime/assessment_tests/`, and referenced through URL query parameters. Reviewed tests can be rebuilt from their seed. Feedback is separate: it can be delivered to an external persistent webhook while a local JSONL copy acts as a development fallback.
+Learning progress and the virtual practice-terminal state are held in Streamlit session state and are intentionally non-persistent in the free validation version. The active assessment test is stored in session state, cached under `.runtime/assessment_tests/`, and referenced through URL query parameters. Reviewed tests can be rebuilt from their seed. Feedback is separate: it can be delivered to an external persistent webhook while a local JSONL copy acts as a development fallback.
 
 ## Security boundary
 
-The application never invokes a shell or executes learner input. Feedback webhook URLs are read from environment variables or private Streamlit secrets and must not be committed to source control. Assessment generation has no external model or API dependency.
+The application never invokes a host shell. Practice terminal input is interpreted only by explicit reviewed handlers against virtual data. Feedback webhook URLs are read from environment variables or private Streamlit secrets and must not be committed to source control. Assessment generation has no external model or API dependency.
 
 ## Visual simulation layer
 

@@ -21,7 +21,20 @@ from opsready_lab.services.assessment_engine import (
     rebuild_curated_test,
     save_test,
 )
+from opsready_lab.services.commercial import CommercialSettings, is_email, is_https_url, load_commercial_settings
+from opsready_lab.services.execution_trace import build_execution_trace
 from opsready_lab.services.feedback import create_feedback_record, submit_feedback, validate_feedback
+from opsready_lab.services.guided_output import guided_output_for
+from opsready_lab.services.practice_terminal import (
+    MAX_TERMINAL_RUNS,
+    SUPPORTED_COMMANDS,
+    TerminalResult,
+    create_terminal_state,
+    execute_command,
+    normalise_terminal_state,
+    prompt_for_state,
+    runs_remaining,
+)
 from opsready_lab.services.progress import (
     initialise_progress,
     record_command,
@@ -30,7 +43,7 @@ from opsready_lab.services.progress import (
     reset_progress,
     score_percent,
 )
-from opsready_lab.ui.animations import hero_demo, operational_flow
+from opsready_lab.ui.animations import execution_trace_diagram, hero_demo, operational_flow
 from opsready_lab.ui.theme import apply_theme, hero, learning_card, panel, terminal
 
 st.set_page_config(page_title=APP_NAME, page_icon="🐧", layout="wide", initial_sidebar_state="auto")
@@ -38,6 +51,18 @@ apply_theme()
 initialise_progress(st.session_state)
 if "feedback_session_id" not in st.session_state:
     st.session_state.feedback_session_id = str(uuid4())
+
+
+def commercial_settings() -> CommercialSettings:
+    """Load non-secret commercial links and launch gates from Streamlit secrets or environment variables."""
+
+    values: dict[str, object] = {}
+    try:
+        commercial_section = st.secrets.get("commercial", {})
+        values = dict(commercial_section) if commercial_section else {}
+    except (FileNotFoundError, KeyError, TypeError):
+        values = {}
+    return load_commercial_settings(values)
 
 
 def progress_sidebar() -> None:
@@ -51,16 +76,30 @@ def progress_sidebar() -> None:
     st.caption(f"Commands explored: {commands}/{len(COMMANDS)}")
     st.caption(f"Incidents completed: {incidents}/{len(INCIDENTS)}")
     st.caption(f"Assessment answers completed: {answered} • validated bank: {len(EXERCISES)}")
-    if st.button("Reset session progress", width="stretch"):
+    if st.button("Reset session progress", width="stretch", key="reset_session_progress"):
         reset_progress(st.session_state)
         for key in list(st.session_state):
             if (
                 key.startswith("assessment_results_")
                 or key.startswith("assessment_choice_")
-                or key in {"active_assessment_test", "assessment_generation_notice"}
+                or key
+                in {
+                    "active_assessment_test",
+                    "assessment_generation_notice",
+                    "practice_terminal_state",
+                    "practice_terminal_last_result",
+                    "practice_terminal_input",
+                    "practice_terminal_run_token",
+                }
             ):
                 st.session_state.pop(key, None)
-        for query_key in ["assessment_test", "assessment_level", "assessment_source", "assessment_seed", "assessment_count"]:
+        for query_key in [
+            "assessment_test",
+            "assessment_level",
+            "assessment_source",
+            "assessment_seed",
+            "assessment_count",
+        ]:
             if query_key in st.query_params:
                 del st.query_params[query_key]
         st.rerun()
@@ -70,6 +109,14 @@ def open_workspace_tab(tab_name: str) -> None:
     """Open a workspace section from an Overview call-to-action button."""
 
     st.session_state.workspace_tab = tab_name
+
+
+def compact_workspace_header(title: str, body: str) -> None:
+    st.markdown(
+        f"<div class='workspace-compact-header'><small>Learning Workspace · {html.escape(APP_VERSION)}</small>"
+        f"<h2>{html.escape(title)}</h2><span>{html.escape(body)}</span></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def overview_hero_section() -> None:
@@ -141,19 +188,208 @@ def overview_tab() -> None:
     )
 
 
-def command_lab_tab() -> None:
-    st.subheader("Command Lab")
-    st.write(
-        "Choose a level and command. Read the learning guidance before running the simulation, then compare the terminal output with the explanation."
+def practice_health_context() -> dict[str, object]:
+    """Return the latest simulated health values for terminal system commands."""
+
+    snapshot = st.session_state.get("health_snapshot")
+    if isinstance(snapshot, dict):
+        return snapshot
+    return {
+        "cpu": st.session_state.get("health_cpu", 32),
+        "memory": st.session_state.get("health_memory", 54),
+        "disk": st.session_state.get("health_disk", 61),
+        "load": st.session_state.get("health_load", 1.4),
+        "io_wait": st.session_state.get("health_io_wait", 3),
+        "connections": st.session_state.get("health_connections", 180),
+    }
+
+
+PRACTICE_EXAMPLES: dict[str, str] = {
+    "Show current directory": "pwd",
+    "List files and permissions": "ls -la",
+    "Read operating-system identity": "cat /etc/os-release",
+    "Inspect application errors": "grep -in error /opt/app/app.log",
+    "Read recent system log entries": "tail -n 3 /var/log/syslog",
+    "Extract users and login shells": "awk -F: '{print $1, $7}' /etc/passwd",
+    "Find log files": "find /var/log -type f -name '*.log'",
+    "Inspect disk capacity": "df -h /",
+    "Inspect memory": "free -m",
+    "Inspect processes": "ps aux",
+}
+
+
+def insert_practice_example() -> None:
+    """Insert the selected reviewed example into the terminal input."""
+
+    label = st.session_state.get("practice_example_choice", "Show current directory")
+    st.session_state.practice_terminal_input = PRACTICE_EXAMPLES.get(label, "pwd")
+
+
+def command_mode_guide() -> None:
+    st.markdown(
+        """
+        <div class='command-mode-guide'>
+          <article><b>Practice terminal</b><span>Type one of 25 safe read-only commands against a stateful virtual Linux filesystem. Use this for hands-on path and output practice.</span></article>
+          <article><b>Guided command explorer</b><span>Select any of 150 commands. The app explains the command and shows the Linux subsystem, file, service, process, or network path it conceptually touches.</span></article>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    level = st.segmented_control("Learning level", LEVELS, default="Beginner", key="command_level")
-    level = level or "Beginner"
+
+
+def render_interactive_terminal() -> None:
+    state = normalise_terminal_state(st.session_state.get("practice_terminal_state"))
+    st.session_state.practice_terminal_state = state
+    if "practice_terminal_input" not in st.session_state:
+        st.session_state.practice_terminal_input = "pwd"
+
+    st.markdown("### Practice terminal")
+    st.caption(
+        "Safe virtual Linux session. One reviewed command at a time; no host shell, server filesystem, or network access."
+    )
+    st.markdown(
+        f"<div class='practice-status'><span>Runs: {runs_remaining(state)}/{MAX_TERMINAL_RUNS}</span>"
+        f"<span>Directory: {html.escape(str(state['cwd']))}</span>"
+        f"<span>Supported: {len(SUPPORTED_COMMANDS)}</span></div>",
+        unsafe_allow_html=True,
+    )
+
+    example_col, reset_col = st.columns([4, 1])
+    example_col.selectbox(
+        "Example command — selecting an item inserts it into the terminal",
+        list(PRACTICE_EXAMPLES),
+        key="practice_example_choice",
+        on_change=insert_practice_example,
+        help="Choose a reviewed task. Its command is inserted below automatically; press Run when ready.",
+    )
+    if reset_col.button("Reset terminal", width="stretch"):
+        st.session_state.practice_terminal_state = create_terminal_state()
+        st.session_state.practice_terminal_input = "pwd"
+        st.session_state.pop("practice_terminal_last_result", None)
+        st.session_state.pop("practice_terminal_trace_cwd", None)
+        st.session_state.practice_terminal_run_token = 0
+        st.session_state.practice_terminal_animation_token = 0
+        st.rerun()
+
+    with st.form("interactive_practice_terminal", clear_on_submit=False):
+        command_col, run_col = st.columns([5, 1])
+        command_line = command_col.text_input(
+            "Linux command",
+            key="practice_terminal_input",
+            placeholder="Try: grep -in error /opt/app/app.log",
+            label_visibility="collapsed",
+            help="One reviewed command only. Chaining, redirection, pipelines, network clients, process control, and destructive commands are blocked.",
+        )
+        submitted = run_col.form_submit_button(
+            "Run",
+            type="primary",
+            width="stretch",
+            disabled=runs_remaining(state) <= 0,
+        )
+
+    if submitted:
+        st.session_state.practice_terminal_trace_cwd = str(state["cwd"])
+        updated_state, result = execute_command(
+            state,
+            command_line,
+            health=practice_health_context(),
+        )
+        st.session_state.practice_terminal_state = updated_state
+        st.session_state.practice_terminal_last_result = result.to_dict()
+        if result.consumed_run:
+            st.session_state.practice_terminal_run_token = (
+                int(st.session_state.get("practice_terminal_run_token", 0)) + 1
+            )
+            st.session_state.practice_terminal_animation_token = (
+                int(st.session_state.get("practice_terminal_animation_token", 0)) + 1
+            )
+            if result.base_command in COMMANDS:
+                record_command(st.session_state, result.base_command)
+        st.rerun()
+
+    result_data = st.session_state.get("practice_terminal_last_result")
+    if isinstance(result_data, dict):
+        result = TerminalResult(**result_data)
+        if result.status == "blocked":
+            st.warning(result.output)
+        elif result.status == "unsupported":
+            st.info(result.output)
+        elif result.status == "limit":
+            st.error(result.output)
+        else:
+            trace = build_execution_trace(
+                result.base_command,
+                result.command,
+                cwd=str(st.session_state.get("practice_terminal_trace_cwd", "/home/student")),
+            )
+            replay_col, replay_note_col = st.columns([1, 3])
+            replay_key = f"replay_practice_{len(state.get('history', []))}_{result.base_command}"
+            if replay_col.button("Replay simulation", width="stretch", key=replay_key):
+                st.session_state.practice_terminal_animation_token = (
+                    int(st.session_state.get("practice_terminal_animation_token", 0)) + 1
+                )
+                st.rerun()
+            replay_note_col.caption(
+                "Replays the moving command token only. It does not use another terminal run or change the result."
+            )
+            trace_col, output_col = st.columns([1.35, 1])
+            with trace_col:
+                execution_trace_diagram(
+                    trace,
+                    run_token=int(st.session_state.get("practice_terminal_animation_token", 1)),
+                )
+            with output_col:
+                st.markdown("<div class='compact-result-title'>Terminal result</div>", unsafe_allow_html=True)
+                if result.status == "error":
+                    st.caption("The simulator returned a normal Linux path or command error.")
+                terminal(
+                    result.command,
+                    result.output,
+                    prompt=prompt_for_state(state),
+                    compact=True,
+                )
+            why_col, next_col = st.columns(2)
+            with why_col:
+                learning_card("What happened", result.explanation)
+            with next_col:
+                learning_card("Try next", result.next_step)
+
+    help_col, history_col = st.columns(2)
+    with help_col.expander("Supported commands and examples", expanded=False):
+        st.code(
+            """pwd                         ls -la
+cd /var/log                 cat /etc/hosts
+head -n 3 /opt/app/app.log  tail -n 3 /var/log/syslog
+wc -l /var/log/auth.log     grep -in error /opt/app/app.log
+cut -d: -f1,7 /etc/passwd  sort /etc/hosts
+uniq -c /etc/hosts          awk -F: '{print $1, $7}' /etc/passwd
+sed -n '1,3p' /opt/app/app.log
+find /var/log -type f -name '*.log'
+file /home/student/scripts/health_check.sh
+stat /opt/app/config.ini    whoami
+id                          uname -a
+hostname                    date
+df -h /                     free -m
+ps aux                      uptime""",
+            language="bash",
+        )
+    history = state.get("history", [])
+    with history_col.expander(f"Command history ({len(history)}/{MAX_TERMINAL_RUNS})", expanded=False):
+        if not history:
+            st.caption("No supported command attempts have been recorded.")
+        else:
+            for entry in reversed(history):
+                st.markdown(f"**{entry['index']}.** `{entry['command']}` · {str(entry['status']).title()}")
+
+
+def render_guided_explorer() -> None:
+    select_a, select_b = st.columns([1, 2])
+    level = select_a.segmented_control("Level", LEVELS, default="Beginner", key="command_level") or "Beginner"
     names = command_names(level)
-    command = st.selectbox("Command", names, key="command_select")
+    command = select_b.selectbox("Command", names, key="command_select")
     item = COMMANDS[command]
     guide = learning_guide(command)
 
-    st.markdown(f"### Learn `{command}` before running it")
     c1, c2, c3 = st.columns(3)
     with c1:
         learning_card("What it does", str(item["summary"]))
@@ -162,44 +398,75 @@ def command_lab_tab() -> None:
     with c3:
         learning_card("What to look for", guide["read"])
 
-    prompt = st.text_input(
-        "Command to simulate",
-        str(item["example"]),
-        key=f"prompt_{command}",
-        help="This text is simulated only. The application does not execute it on a server.",
-    )
-    if st.button("Run simulation", type="primary", key=f"run_{command}"):
+    command_col, run_col = st.columns([5, 1])
+    command_col.code(str(item["example"]), language="bash")
+    run_clicked = run_col.button("Run guide", type="primary", width="stretch", key=f"run_{command}")
+    if run_clicked:
         record_command(st.session_state, command)
         st.session_state.last_command = command
         st.session_state.command_run_token = int(st.session_state.get("command_run_token", 0)) + 1
+        st.session_state.command_animation_token = int(st.session_state.get("command_animation_token", 0)) + 1
 
-    if st.session_state.get("last_command") == command:
-        operational_flow(
-            title=f"Simulated command path: {command}",
-            subtitle="A visible signal moves from the learner workstation to Linux evidence and interpretation.",
-            run_token=int(st.session_state.get("command_run_token", 1)),
-            final_label="Interpretation",
+    if st.session_state.get("last_command") != command:
+        st.info("Run the reviewed example to see its command-specific Linux execution path and simulated output.")
+        return
+
+    trace = build_execution_trace(command, str(item["example"]))
+    replay_col, replay_note_col = st.columns([1, 3])
+    if replay_col.button("Replay simulation", width="stretch", key=f"replay_guided_{command}"):
+        st.session_state.command_animation_token = int(st.session_state.get("command_animation_token", 0)) + 1
+        st.rerun()
+    replay_note_col.caption("Replays the moving command token only. The reviewed output and progress stay unchanged.")
+    trace_col, output_col = st.columns([1.35, 1])
+    with trace_col:
+        execution_trace_diagram(
+            trace,
+            run_token=int(st.session_state.get("command_animation_token", 1)),
         )
-        terminal(prompt, str(item["output"]))
-        st.markdown("### How to understand this result")
+    with output_col:
+        st.markdown("<div class='compact-result-title'>Simulated output</div>", unsafe_allow_html=True)
+        terminal(
+            str(item["example"]),
+            guided_output_for(command, str(item["example"]), item["output"]),
+            compact=True,
+        )
+
+    with st.expander("Interpretation, flags, safety, and next step", expanded=False):
         panel("Output interpretation", guide["read"])
-
         flags = pd.DataFrame(item["flags"], columns=["Flag / argument", "Meaning"])
-        st.markdown("### Useful flags and arguments")
         st.dataframe(flags, width="stretch", hide_index=True)
-
-        c1, c2 = st.columns(2)
-        c1.markdown(
+        safe_col, risk_col = st.columns(2)
+        safe_col.markdown(
             f"<div class='safe'><b>Safe use</b><br>{html.escape(str(item['safe']))}</div>",
             unsafe_allow_html=True,
         )
-        c2.markdown(
+        risk_col.markdown(
             f"<div class='risk'><b>Risk or limitation</b><br>{html.escape(str(item['risk']))}</div>",
             unsafe_allow_html=True,
         )
         panel("Suggested next step", guide["next"])
+
+
+def command_lab_tab() -> None:
+    st.subheader("Command Lab")
+    st.write(
+        "Choose one learning mode. The two modes are separate so you do not need to select a catalogue command before using the terminal."
+    )
+    command_mode_guide()
+    mode = (
+        st.segmented_control(
+            "Learning mode",
+            ["Practice terminal", "Guided command explorer"],
+            default="Practice terminal",
+            key="command_experience_mode",
+        )
+        or "Practice terminal"
+    )
+
+    if mode == "Practice terminal":
+        render_interactive_terminal()
     else:
-        st.info("Read the three learning cards, then run the selected command to generate simulated terminal output.")
+        render_guided_explorer()
 
 
 def health_dashboard_tab() -> None:
@@ -263,13 +530,23 @@ def health_dashboard_tab() -> None:
 
     with st.expander("What each measurement means", expanded=False):
         d1, d2, d3 = st.columns(3)
-        d1.markdown("**CPU usage** — processor time currently in use. Sustained high use can indicate heavy computation or a runaway process.")
-        d2.markdown("**Memory usage** — occupied RAM. Diagnose it with available memory, swap activity, and process growth rather than percentage alone.")
-        d3.markdown("**Disk usage** — filesystem capacity consumed. Near-full filesystems can prevent logs, databases, and applications from writing.")
+        d1.markdown(
+            "**CPU usage** — processor time currently in use. Sustained high use can indicate heavy computation or a runaway process."
+        )
+        d2.markdown(
+            "**Memory usage** — occupied RAM. Diagnose it with available memory, swap activity, and process growth rather than percentage alone."
+        )
+        d3.markdown(
+            "**Disk usage** — filesystem capacity consumed. Near-full filesystems can prevent logs, databases, and applications from writing."
+        )
         d4, d5, d6 = st.columns(3)
         d4.markdown("**Load average** — runnable or uninterruptible tasks. This simulation assumes four virtual CPUs.")
-        d5.markdown("**I/O wait** — CPU time spent waiting for storage. High values can indicate slow or saturated disks.")
-        d6.markdown("**Active connections** — current network sockets. Sudden growth can reflect traffic, retries, or connection leakage.")
+        d5.markdown(
+            "**I/O wait** — CPU time spent waiting for storage. High values can indicate slow or saturated disks."
+        )
+        d6.markdown(
+            "**Active connections** — current network sockets. Sudden growth can reflect traffic, retries, or connection leakage."
+        )
 
     c1, c2, c3 = st.columns(3)
     cpu = c1.slider("CPU usage (%)", 0, 100, key="health_cpu")
@@ -290,21 +567,31 @@ def health_dashboard_tab() -> None:
             "connections": int(connections),
         }
         preset_values = scenarios[scenario_name]["values"]
-        scenario_label = scenario_name if selected_values == preset_values else f"Custom values based on {scenario_name}"
+        scenario_label = (
+            scenario_name if selected_values == preset_values else f"Custom values based on {scenario_name}"
+        )
         st.session_state.health_snapshot = {"scenario": scenario_label, **selected_values}
         st.session_state.health_run_token = int(st.session_state.get("health_run_token", 0)) + 1
 
     snapshot = st.session_state.get("health_snapshot")
     if not isinstance(snapshot, dict):
-        st.info("Choose or customise a scenario, then click **Run simulated health check**. Results are generated only when the simulation is run.")
+        st.info(
+            "Choose or customise a scenario, then click **Run simulated health check**. Results are generated only when the simulation is run."
+        )
         return
 
     current_values = {
-        "cpu": int(cpu), "memory": int(memory), "disk": int(disk), "load": float(load),
-        "io_wait": int(io_wait), "connections": int(connections),
+        "cpu": int(cpu),
+        "memory": int(memory),
+        "disk": int(disk),
+        "load": float(load),
+        "io_wait": int(io_wait),
+        "connections": int(connections),
     }
     if any(snapshot[key] != value for key, value in current_values.items()):
-        st.warning("The controls have changed since the last run. Click **Run simulated health check** again to generate results for the new values.")
+        st.warning(
+            "The controls have changed since the last run. Click **Run simulated health check** again to generate results for the new values."
+        )
 
     cpu_v = int(snapshot["cpu"])
     memory_v = int(snapshot["memory"])
@@ -338,7 +625,9 @@ def health_dashboard_tab() -> None:
         final_label="Diagnosis",
     )
     st.markdown(f"### Simulation result: {overall}")
-    st.caption(f"Scenario used for this run: {snapshot['scenario']} · simulated host: 4 vCPU, 8 GiB RAM, 80 GiB root filesystem")
+    st.caption(
+        f"Scenario used for this run: {snapshot['scenario']} · simulated host: 4 vCPU, 8 GiB RAM, 80 GiB root filesystem"
+    )
     m1, m2, m3, m4, m5, m6 = st.columns(6)
     m1.metric("CPU", f"{cpu_v}%", statuses["CPU"][0])
     m2.metric("Memory", f"{memory_v}%", statuses["Memory"][0])
@@ -364,7 +653,9 @@ def health_dashboard_tab() -> None:
         paper_bgcolor="rgba(0,0,0,0)",
     )
     st.plotly_chart(fig, width="stretch")
-    st.caption("The chart converts unlike units into a relative pressure scale. Exact measurements remain visible above.")
+    st.caption(
+        "The chart converts unlike units into a relative pressure scale. Exact measurements remain visible above."
+    )
 
     st.markdown("### Simulated command evidence")
     active_cpu = min(cpu_v, max(0, 100 - io_v))
@@ -410,7 +701,7 @@ Swap:          2048   {swap_mib}   {2048 - swap_mib}""",
             "ss -s",
             f"""Total: {conn_v}
 TCP: {conn_v} (estab {established}, closed 0, orphaned 2, timewait {time_wait})
-UDP: {max(8, round(conn_v * .03))}""",
+UDP: {max(8, round(conn_v * 0.03))}""",
         )
 
     findings: list[tuple[str, str, str]] = []
@@ -424,10 +715,22 @@ UDP: {max(8, round(conn_v * .03))}""",
     ]
     for metric, value, status, commands in metric_details:
         if status != "Normal":
-            findings.append((f"{metric}: {status}", f"The simulated value is {value}. This crosses the {status.lower()} training threshold.", commands))
+            findings.append(
+                (
+                    f"{metric}: {status}",
+                    f"The simulated value is {value}. This crosses the {status.lower()} training threshold.",
+                    commands,
+                )
+            )
 
     if not findings:
-        findings.append(("No threshold breach", "All simulated values are below the training warning thresholds.", "Collect trends over time and compare them with a known healthy baseline."))
+        findings.append(
+            (
+                "No threshold breach",
+                "All simulated values are below the training warning thresholds.",
+                "Collect trends over time and compare them with a known healthy baseline.",
+            )
+        )
 
     st.markdown("### What this run suggests")
     for title, meaning, commands in findings:
@@ -450,7 +753,9 @@ UDP: {max(8, round(conn_v * .03))}""",
     else:
         likely = "Early degradation: collect repeated samples before selecting a corrective action."
     panel("Likely operational interpretation", likely)
-    st.info("A real diagnosis requires repeated samples, workload baselines, hardware context, application logs, and user impact. Do not act on one threshold alone.")
+    st.info(
+        "A real diagnosis requires repeated samples, workload baselines, hardware context, application logs, and user impact. Do not act on one threshold alone."
+    )
 
 
 def learning_paths_tab() -> None:
@@ -512,13 +817,15 @@ def incident_lab_tab() -> None:
 
     st.markdown("### Simulated incident event log")
     symptom_lines = list(incident["symptoms"])
-    simulated_log = f"""17:40:00 monitoring[{incident['id']}]: alert opened - {incident['title']}
+    simulated_log = f"""17:40:00 monitoring[{incident["id"]}]: alert opened - {incident["title"]}
 17:40:04 service-report: {symptom_lines[0]}
 17:40:09 operator-note: {symptom_lines[1]}
 17:40:15 triage: {symptom_lines[2]}
 17:40:20 triage: next step must gather evidence before changing system state"""
     st.code(simulated_log, language="text")
-    st.caption("Use the report and simulated log only to select the next diagnostic command. Detailed evidence remains hidden until submission.")
+    st.caption(
+        "Use the report and simulated log only to select the next diagnostic command. Detailed evidence remains hidden until submission."
+    )
 
     answer = st.radio(str(incident["question"]), list(incident["options"]), key=f"incident_answer_{incident['id']}")
     submitted_key = f"incident_submitted_{incident['id']}"
@@ -528,9 +835,9 @@ def incident_lab_tab() -> None:
         record_incident(st.session_state, str(incident["id"]), awarded, int(incident["points"]))
         st.session_state[submitted_key] = True
         st.session_state[f"incident_correct_{incident['id']}"] = correct
-        st.session_state[f"incident_run_token_{incident['id']}"] = int(
-            st.session_state.get(f"incident_run_token_{incident['id']}", 0)
-        ) + 1
+        st.session_state[f"incident_run_token_{incident['id']}"] = (
+            int(st.session_state.get(f"incident_run_token_{incident['id']}", 0)) + 1
+        )
 
     if st.session_state.get(submitted_key):
         operational_flow(
@@ -566,6 +873,11 @@ def learning_workspace_page() -> None:
 
     if current == "Overview":
         overview_hero_section()
+    elif current == "Command Lab":
+        compact_workspace_header(
+            "Command Lab",
+            "Practise a safe virtual command or explore how any catalogue command interacts with Linux.",
+        )
     else:
         hero(
             f"Learning Workspace · {APP_VERSION}",
@@ -666,12 +978,15 @@ def assessment_page() -> None:
         "The active test stays unchanged until you press **Generate new test**."
     )
 
-    requested_count = st.segmented_control(
-        "Questions in a generated test",
-        [5, 10, 15],
-        default=10,
-        key="assessment_requested_count",
-    ) or 10
+    requested_count = (
+        st.segmented_control(
+            "Questions in a generated test",
+            [5, 10, 15],
+            default=10,
+            key="assessment_requested_count",
+        )
+        or 10
+    )
 
     generate_label = "Generate new test" if active_test else "Generate test"
     if st.button(generate_label, type="primary", width="stretch", key="generate_assessment_test"):
@@ -735,7 +1050,9 @@ def assessment_page() -> None:
         if submitted:
             missing = [str(q["id"]) for q in questions if selections[str(q["id"])] is None]
             if missing:
-                st.error(f"Answer all {len(questions)} questions before submitting. Unanswered questions: {len(missing)}.")
+                st.error(
+                    f"Answer all {len(questions)} questions before submitting. Unanswered questions: {len(missing)}."
+                )
             else:
                 stored_answers: dict[str, str] = {}
                 for question in questions:
@@ -748,9 +1065,7 @@ def assessment_page() -> None:
                 st.rerun()
     else:
         stored_answers = st.session_state[results_key]
-        correct_count = sum(
-            1 for question in questions if stored_answers[str(question["id"])] == question["answer"]
-        )
+        correct_count = sum(1 for question in questions if stored_answers[str(question["id"])] == question["answer"])
         earned_points = sum(
             int(question["points"])
             for question in questions
@@ -766,7 +1081,9 @@ def assessment_page() -> None:
         if percent >= 75:
             st.success("Test passed. Review the explanations before generating another test.")
         else:
-            st.warning("Review the explanations and revisit the related workspace sections before generating another test.")
+            st.warning(
+                "Review the explanations and revisit the related workspace sections before generating another test."
+            )
 
         st.markdown("### Answer review")
         for index, question in enumerate(questions, 1):
@@ -779,7 +1096,9 @@ def assessment_page() -> None:
                 st.markdown(f"**Your answer:** {selected_answer}")
                 st.markdown(f"**Correct answer:** {question['answer']}")
                 st.markdown(f"**Explanation:** {question['explanation']}")
-        st.info("Generate another test only when you are finished reviewing this one. Open **Feedback** to report an inaccurate or ambiguous question.")
+        st.info(
+            "Generate another test only when you are finished reviewing this one. Open **Feedback** to report an inaccurate or ambiguous question."
+        )
 
 
 def configured_feedback_webhook() -> str:
@@ -1013,12 +1332,123 @@ def feedback_page() -> None:
                 st.error(result.message)
 
 
+def plans_page() -> None:
+    settings = commercial_settings()
+    hero(
+        "Plans and access",
+        "Community now. Pro after fulfilment is ready.",
+        "The free simulator remains available while the paid edition is prepared with persistent progress, expanded content, and controlled access.",
+    )
+
+    if settings.ready_for_live_checkout:
+        st.success("Paid checkout is enabled and the commercial readiness gate is complete.")
+    else:
+        st.info("Pre-launch status: no payment is accepted from this page yet.")
+
+    community, pro = st.columns(2)
+    with community:
+        st.markdown("### Community")
+        st.markdown("**Free public learning edition**")
+        st.markdown(
+            """
+            - 150 guided Linux commands
+            - 25-command safe practice terminal
+            - 50 incident scenarios
+            - 45 reviewed assessment questions
+            - session-based progress
+            - community feedback channel
+            """
+        )
+        st.button("Current plan: Community", disabled=True, width="stretch")
+
+    with pro:
+        st.markdown("### Pro")
+        st.markdown("**Planned paid learning edition**")
+        st.markdown(
+            """
+            - persistent learner account and saved progress
+            - expanded reviewed assessment bank
+            - longer structured learning paths
+            - advanced incident and troubleshooting labs
+            - downloadable completion evidence
+            - priority content and issue support
+            """
+        )
+        price_a, price_b = st.columns(2)
+        price_a.metric("Monthly", settings.monthly_price_label)
+        price_b.metric("Annual", settings.annual_price_label)
+        if settings.ready_for_live_checkout:
+            st.link_button("Upgrade to Pro", settings.checkout_url, type="primary", width="stretch")
+        elif settings.waitlist_available:
+            st.link_button("Join the Pro launch list", settings.waitlist_url, type="primary", width="stretch")
+        else:
+            st.button("Pro launch list coming soon", disabled=True, width="stretch")
+
+    st.markdown("### Pro delivery roadmap")
+    st.markdown(
+        """
+        <div class="pro-roadmap">
+          <article class="pro-roadmap-step current">
+            <span>Current phase</span>
+            <strong>1. Foundation</strong>
+            <p>Stabilise Community, create the private Pro repository, add authentication, and save learner progress in a database.</p>
+          </article>
+          <article class="pro-roadmap-step">
+            <span>Next</span>
+            <strong>2. Founding beta</strong>
+            <p>Add expanded assessments and advanced incidents, test Lemon Squeezy fulfilment, then onboard the first 10 paying learners.</p>
+          </article>
+          <article class="pro-roadmap-step">
+            <span>Later</span>
+            <strong>3. Instructor and cohort tools</strong>
+            <p>Add assignment tracking, learner reports, cohort licences, and institution-facing administration after individual Pro is stable.</p>
+          </article>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "Checkout remains closed until account access, subscription changes, cancellation, expiry, and saved progress have all been tested end to end."
+    )
+
+    st.markdown("### What must be ready before payment opens")
+    st.write(
+        "A private Pro application, reliable account-based access, persistent progress, published legal policies, support contact details, and tested purchase fulfilment must all be operational before the checkout link is enabled."
+    )
+
+    policy_links: list[tuple[str, str]] = []
+    for label, url in (
+        ("Terms of use", settings.terms_url),
+        ("Privacy policy", settings.privacy_url),
+        ("Refund and cancellation policy", settings.refund_url),
+    ):
+        if is_https_url(url):
+            policy_links.append((label, url))
+
+    st.markdown("### Purchase policies")
+    if policy_links:
+        columns = st.columns(len(policy_links))
+        for column, (label, url) in zip(columns, policy_links, strict=True):
+            column.link_button(label, url, width="stretch")
+    else:
+        st.caption("The legal policy links are intentionally unpublished while sales remain disabled.")
+
+    if is_email(settings.support_email):
+        st.caption(f"Support contact: {settings.support_email}")
+    if settings.portal_available:
+        st.link_button("Manage an existing subscription", settings.customer_portal_url)
+
+
 def help_page() -> None:
-    hero("Usage guide", "How to Use the Lab", "Use the simulator to learn diagnostic reasoning, then repeat the exercises in a disposable Linux environment.")
+    hero(
+        "Usage guide",
+        "How to Use the Lab",
+        "Use the simulator to learn diagnostic reasoning, then repeat the exercises in a disposable Linux environment.",
+    )
     st.markdown(
         """
         1. Open **Learning Workspace** and use its tabs from left to right.
-        2. In **Command Lab**, read the learner cards before running each command.
+        2. In **Command Lab**, use the safe Practice terminal for hands-on practice or Guided command explorer for the wider command catalogue.
         3. In **Health Dashboard**, move one measurement at a time and explain why the recommended command is relevant.
         4. Follow a complete **Learning Path**, then solve matching incidents.
         5. Open **Assessment**, generate a test explicitly, answer every displayed question, and review the explanations before generating another test.
@@ -1028,7 +1458,7 @@ def help_page() -> None:
     )
     st.subheader("Safety boundary")
     st.write(
-        "The simulator never executes the entered command. Avoid copying destructive examples into a real terminal. Review paths, permissions, service impact, backups, and rollback plans before any change."
+        "The Practice terminal never invokes a host shell. It parses one reviewed command at a time against an in-memory virtual filesystem. Guided command explorer also remains synthetic. Avoid copying destructive examples into a real terminal. Review paths, permissions, service impact, backups, and rollback plans before any change."
     )
     st.subheader("Progress limitation")
     st.write(
@@ -1038,15 +1468,16 @@ def help_page() -> None:
 
 with st.sidebar:
     st.markdown(f"## 🐧 {APP_NAME}")
-    page = st.radio("Navigation", ["Learning Workspace", "Assessment", "Feedback", "Help"], index=0)
+    page = st.radio("Navigation", ["Learning Workspace", "Assessment", "Plans", "Feedback", "Help"], index=0)
     st.markdown("---")
     progress_sidebar()
     st.markdown("---")
-    st.caption("Educational simulation only. No real command execution.")
+    st.caption("Safe simulation only. Interactive practice never invokes a host shell.")
 
 PAGES = {
     "Learning Workspace": learning_workspace_page,
     "Assessment": assessment_page,
+    "Plans": plans_page,
     "Feedback": feedback_page,
     "Help": help_page,
 }

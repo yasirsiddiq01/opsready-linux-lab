@@ -1,5 +1,77 @@
 # Changelog
 
+## 1.7.1 — 2026-07-23
+
+- fixed Ruff import-order and `collections.abc.Mapping` findings in the commercial settings service;
+- added a stable key and high-contrast resting style for the sidebar Reset session progress button;
+- added a three-phase Pro delivery roadmap to the Plans page;
+- added a commercial Pro roadmap document;
+- kept checkout and paid fulfilment disabled by default;
+- added regression coverage for the reset-button style and Pro roadmap.
+
+
+## 1.7.0 — 2026-07-23
+
+- Added a Plans page that separates the current free Community edition from the planned Pro edition.
+- Added a fail-closed checkout configuration: sales remain unavailable unless sales, fulfilment, checkout, support, terms, privacy, and refund requirements all pass validation.
+- Added optional waitlist and customer-portal links.
+- Added commercial configuration support through Streamlit secrets or environment variables without embedding platform credentials.
+- Added a Lemon Squeezy preparation pack with product listing copy, store-activation answers, pricing worksheet, Community/Pro feature boundary, seller checklist, and required owner decisions.
+- Added draft Terms of Use, Privacy Policy, Refund and Cancellation Policy, and commercial disclosure templates with visible placeholders.
+- Added a command-line commercial-readiness checker and automated validation for URLs, emails, and launch gates.
+- Kept all payment functionality disabled by default; no checkout, webhook, licence validation, or paid access is activated in this release.
+
+## 1.6.4 — 2026-07-18
+
+- Added a large orange command token that visibly travels through every numbered execution stage.
+- Added directional route arrows and an animated progress path behind the command token.
+- Slowed stage highlighting so the learner can follow the Linux touchpoints in sequence.
+- Added **Replay simulation** in Practice terminal and Guided command explorer.
+- Replay restarts only the animation; it does not rerun the command, consume a terminal attempt, change output, or add progress.
+- Added regression tests for visible motion markup and replay-only behaviour.
+
+## 1.6.3 — 2026-07-18
+
+- Corrected `basename` and `dirname` as path-string transformations rather than filesystem metadata reads.
+- Clarified that these commands do not remove, open, or verify files or directories.
+- Added plain-language Input, Action, Result, and System effect cards to every execution trace.
+- Added explicit shell-pipeline traces using process stages and kernel pipe buffers.
+- Added a separate file-type trace showing target-byte inspection and the local magic database.
+- Added semantic regression tests for path-string commands, pipelines, state-changing examples, and all 150 effect summaries.
+
+## 1.6.2 — 2026-07-18
+
+- Added reviewed command-specific outputs for the Guided command explorer.
+- Removed generic repeated text outputs.
+- Replaced Load example with automatic insertion from the example selector.
+- Replaced horizontally clipped trace strips with numbered compact diamond/zig-zag maps.
+
+## 1.6.1 — 2026-07-18
+
+- Simplified Command Lab into two clearly separated modes: Practice terminal and Guided command explorer.
+- Moved the learning-mode choice before catalogue selection so terminal users no longer need to select a guided command first.
+- Replaced the generic workstation-switch-router-server command animation with command-specific Linux execution traces.
+- Added traces for shell built-ins, VFS/file reads, procfs, memory, storage, processes, systemd/D-Bus, journals, networking, DNS, firewall, containers, identities, permissions, kernel, security, and scheduling.
+- Added exact touchpoint labels such as `/etc/passwd`, `/proc/meminfo`, `/run/systemd/private`, `/var/log/journal`, `/var/run/docker.sock`, and network targets.
+- Added a compact result layout placing the execution trace and terminal output side by side on larger screens.
+- Collapsed detailed flags, safety guidance, and next steps in Guided mode to reduce repeated scrolling.
+- Removed editable arbitrary text from Guided mode; it now runs the reviewed example for the selected catalogue command.
+- Added `/etc/os-release` to the virtual filesystem so the loaded `cat /etc/os-release` example succeeds.
+- Added command-trace and UI regression tests.
+
+## 1.6.0 — 2026-07-18
+
+- Replaced the static Command Lab result area with an optional safe Interactive Linux Practice Terminal.
+- Added 25 reviewed commands operating only on an in-memory virtual filesystem.
+- Added stateful current-directory handling, relative paths, command history, explanations, and suggested next commands.
+- Added a 10-supported-attempt limit per virtual terminal reset.
+- Added scenario-dependent `df`, `free`, `ps`, and `uptime` output linked to the Health Dashboard.
+- Blocked shell chaining, pipelines, redirection, substitution, parent traversal, network clients, process control, service control, and destructive commands.
+- Retained Guided simulation for all 150 catalogue commands.
+- Changed the initial sidebar state to automatic for mobile and tablet layouts.
+- Added public viewer-toolbar and reduced browser-error-detail configuration.
+- Added terminal security, state, health-linkage, limit, and Streamlit UI tests.
+
 ## 1.5.2 — 2026-07-14
 
 - Removed Qwen, external assessment-provider configuration, API-key settings, model-generation code, learner-facing AI options, cooldown logic, and provider tests.

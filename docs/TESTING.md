@@ -6,35 +6,51 @@ Run all checks with:
 make check
 ```
 
-The test suite validates:
+The automated suite validates:
 
-- minimum content counts
-- required command fields
-- unique incident and question identifiers
-- answer membership in options
-- positive score values
-- score idempotency
-- zero-denominator accuracy behaviour
-- deterministic random assessment generation
-- no duplicate questions inside a generated test
-- duplicate ID and duplicate normalized-text rejection
-- three-question reviewed emergency coverage for every level
-- generated-test cache round trips
-- absence of learner-facing model or AI-generator controls
+- minimum command, incident, and assessment counts
+- required content fields and unique identifiers
+- score idempotency and assessment-bank integrity
+- deterministic random assessments and no repetition inside a test
+- feedback validation and form reset behaviour
+- exactly 25 reviewed Practice-mode commands
+- stateful `cd`, relative paths, and virtual-file reads
+- reviewed `awk`, `grep`, `sed`, and filesystem output
+- Health Dashboard linkage for `df`, `free`, `ps`, and `uptime`
+- run-limit enforcement
+- blocked chaining, pipelines, redirection, substitution, traversal, network clients, runtimes, and destructive commands
+- absence of shell-execution imports or fallbacks
+- Streamlit Practice terminal rendering, execution, and blocked-input behaviour
 
 Manual smoke test:
 
-1. Start the app.
-2. Open every navigation page.
-3. Run one command from each level.
-4. Complete one incident correctly and one incorrectly.
-5. Open Assessment and confirm no test is generated before the button is pressed.
-6. Generate a reviewed random test and confirm normal widget reruns keep the same test ID.
-7. Generate another test and confirm the ID and question set change.
-8. Confirm the page contains no Qwen, model-provider, or AI-generator options.
-9. Answer assessment questions and verify that repeated submissions do not increase the score.
-10. Reset progress and verify that all session counters return to zero.
+1. Start the app and open every navigation page.
+2. Open Command Lab and confirm **Practice terminal** is the default mode.
+3. Run `pwd`, `ls -la`, `cd projects`, and `cat readme.md`; confirm the directory is stateful.
+4. Run `awk -F: '{print $1, $7}' /etc/passwd`.
+5. Submit `pwd && whoami`, `curl https://example.com`, and `cat ../../etc/passwd`; confirm they are blocked without consuming a run.
+6. Use all 10 supported attempts and confirm the eleventh is refused until reset.
+7. Run a Health Dashboard scenario, return to Command Lab, and confirm `df`, `free`, `ps`, or `uptime` reflects it.
+8. Switch to Guided command explorer and run one command outside the 25-command Practice subset.
+9. Generate and submit an assessment.
+10. Submit feedback and verify the persistent destination receives the row.
+11. Test desktop, tablet, and one real mobile phone.
 
-## Interface checks
+Expected automated result for version 1.7.1:
 
-Before public deployment, verify the Overview animation at 100% zoom, dropdown contrast in closed and opened states, reduced-motion fallback, assessment generation controls, test persistence during reruns, and feedback delivery.
+```text
+57 non-UI tests passed
+```
+
+
+## Commercial readiness tests
+
+The suite verifies that checkout is disabled by default, rejects non-HTTPS URLs and malformed support addresses, permits a waitlist without enabling payment, and only marks live checkout ready when fulfilment and all policy requirements are configured.
+
+Run the owner-facing configuration check separately:
+
+```bash
+python scripts/check_commercial_readiness.py
+```
+
+A non-zero result is expected before the Pro fulfilment system and live policy URLs exist.

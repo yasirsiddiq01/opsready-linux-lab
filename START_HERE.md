@@ -61,7 +61,19 @@ webhook_url = "https://your-private-feedback-endpoint"
 
 Submit a test response and verify that it reaches the destination.
 
-## 6. Verify assessment behaviour
+## 6. Verify Practice terminal behaviour
+
+In Command Lab, confirm that:
+
+- **Practice terminal** is the default mode;
+- `pwd`, `ls -la`, `cd projects`, and `cat readme.md` operate on a stateful virtual filesystem;
+- `pwd && whoami`, `curl https://example.com`, and `cat ../../etc/passwd` are blocked;
+- supported attempts reduce the 10-run counter;
+- blocked input does not reduce the counter;
+- reset restores the virtual filesystem and run allowance;
+- Guided command explorer remains available for commands outside the 25-command subset.
+
+## 7. Verify assessment behaviour
 
 The app uses only its reviewed question bank. Confirm that:
 
@@ -71,7 +83,7 @@ The app uses only its reviewed question bank. Confirm that:
 - a test contains no duplicate question;
 - changing the level does not replace an active test until generation is requested.
 
-## 7. Create an independent Git repository
+## 8. Create an independent Git repository
 
 ### Windows
 
@@ -85,6 +97,11 @@ The app uses only its reviewed question bank. Confirm that:
 bash scripts/init_repository.sh
 ```
 
-## 8. Complete the public-launch checklist
+## 9. Complete the public-launch checklist
 
 Read [`LAUNCH_CHECKLIST.md`](LAUNCH_CHECKLIST.md). Do not publish the free link until feedback persistence, privacy contact details, tests, and mobile checks are complete.
+
+
+## Commercial preparation
+
+The repository includes a pre-launch commercial pack, but payment is disabled. Read `commercial/LEMON_SQUEEZY_SETUP.md` and complete `commercial/PRE_LAUNCH_DECISIONS.md` before opening a live store. Keep the Community repository public and create a separate private repository for paid-only features.
